@@ -78,7 +78,9 @@ public class ExhibitorCLI
     public static final String AZURE_CREDENTIALS = "azurecredentials";
     public static final String AZURE_CONFIG = "azureconfig";
     public static final String GCS_CREDENTIALS = "gcscredentials";
+    public static final String OPENSTACK_CREDENTIALS = "openstackcredentials";
     public static final String GCS_CONFIG = "gcsconfig";
+    public static final String OPENSTACK_CONFIG = "openstackconfig";
     public static final String GCS_CONFIG_PREFIX = "gcsconfigprefix";
     public static final String ZOOKEEPER_CONFIG_INITIAL_CONNECT_STRING = "zkconfigconnect";
     public static final String ZOOKEEPER_CONFIG_EXHIBITOR_PORT = "zkconfigexhibitorport";

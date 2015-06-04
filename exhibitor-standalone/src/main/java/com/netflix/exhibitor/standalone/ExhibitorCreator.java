@@ -40,12 +40,17 @@ import com.netflix.exhibitor.core.config.gcs.GcsConfigArguments;
 import com.netflix.exhibitor.core.config.gcs.GcsConfigAutoManageLockArguments;
 import com.netflix.exhibitor.core.config.gcs.GcsConfigProvider;
 import com.netflix.exhibitor.core.config.none.NoneConfigProvider;
+import com.netflix.exhibitor.core.config.openstack.OpenstackConfigArguments;
+import com.netflix.exhibitor.core.config.openstack.OpenstackConfigAutoManageLockArguments;
+import com.netflix.exhibitor.core.config.openstack.OpenstackConfigProvider;
 import com.netflix.exhibitor.core.config.s3.S3ConfigArguments;
 import com.netflix.exhibitor.core.config.s3.S3ConfigAutoManageLockArguments;
 import com.netflix.exhibitor.core.config.s3.S3ConfigProvider;
 import com.netflix.exhibitor.core.config.zookeeper.ZookeeperConfigProvider;
 import com.netflix.exhibitor.core.gcs.GcsClientFactoryImpl;
 import com.netflix.exhibitor.core.gcs.PropertyBasedGcsCredential;
+import com.netflix.exhibitor.core.openstack.OpenstackClientfactoryImpl;
+import com.netflix.exhibitor.core.openstack.PropertyBasedOpenstackCredential;
 import com.netflix.exhibitor.core.s3.PropertyBasedS3ClientConfig;
 import com.netflix.exhibitor.core.s3.PropertyBasedS3Credential;
 import com.netflix.exhibitor.core.s3.S3ClientFactoryImpl;
@@ -133,6 +138,7 @@ public class ExhibitorCreator
         PropertyBasedS3ClientConfig   awsClientConfig = null;
         PropertyBasedGcsCredential    gcsCredentials = null;
         PropertyBasedAzureCredential  azureCredentials = null;
+        PropertyBasedOpenstackCredential openstackCredentials = null;
         if ( commandLine.hasOption(S3_CREDENTIALS) )
         {
             awsCredentials = new PropertyBasedS3Credential(new File(commandLine.getOptionValue(S3_CREDENTIALS)));
@@ -146,6 +152,10 @@ public class ExhibitorCreator
         if ( commandLine.hasOption(AZURE_CREDENTIALS) )
         {
             azureCredentials = new PropertyBasedAzureCredential(new File(commandLine.getOptionValue(AZURE_CREDENTIALS)));
+        }
+        if ( commandLine.hasOption(OPENSTACK_CREDENTIALS) )
+        {
+            openstackCredentials = new PropertyBasedOpenstackCredential(new File(commandLine.getOptionValue(OPENSTACK_CREDENTIALS)));
         }
 
 
@@ -173,7 +183,7 @@ public class ExhibitorCreator
             throw new MissingConfigurationTypeException("Configuration type (-" + SHORT_CONFIG_TYPE + " or --" + CONFIG_TYPE + ") must be specified", cli);
         }
 
-        ConfigProvider configProvider = makeConfigProvider(configType, cli, commandLine, awsCredentials, awsClientConfig, backupProvider, useHostname, s3Region, azureCredentials);
+        ConfigProvider configProvider = makeConfigProvider(configType, cli, commandLine, awsCredentials, awsClientConfig, backupProvider, useHostname, s3Region, azureCredentials, openstackCredentials);
         if ( configProvider == null )
         {
             throw new ExhibitorCreatorExit(cli);
@@ -296,7 +306,13 @@ public class ExhibitorCreator
         return remoteAuthSpec;
     }
 
-    private ConfigProvider makeConfigProvider(String configType, ExhibitorCLI cli, CommandLine commandLine, PropertyBasedS3Credential awsCredentials, PropertyBasedS3ClientConfig awsClientConfig, BackupProvider backupProvider, String useHostname, String s3Region, PropertyBasedAzureCredential azureCredentials) throws Exception
+    private ConfigProvider makeConfigProvider(String configType, ExhibitorCLI cli, CommandLine commandLine,
+                                              PropertyBasedS3Credential awsCredentials,
+                                              PropertyBasedS3ClientConfig awsClientConfig,
+                                              BackupProvider backupProvider, String useHostname,
+                                              String s3Region,
+                                              PropertyBasedAzureCredential azureCredentials,
+                                              PropertyBasedOpenstackCredential openstackCredentials) throws Exception
     {
         Properties          defaultProperties = makeDefaultProperties(commandLine, backupProvider);
 
@@ -320,6 +336,10 @@ public class ExhibitorCreator
         else if ( configType.equals("azure") )
         {
             configProvider = getAzureProvider(cli, commandLine, azureCredentials, useHostname, defaultProperties);
+        }
+        else if ( configType.equals("openstack") )
+        {
+            configProvider = getOpenstackProvider(cli, commandLine, openstackCredentials, useHostname, defaultProperties);
         }
         else if ( configType.equals("none") )
         {
@@ -566,6 +586,16 @@ public class ExhibitorCreator
         return new GcsConfigProvider(new GcsClientFactoryImpl(), getGcsArguments(cli, commandLine.getOptionValue(GCS_CONFIG), prefix), hostname, defaultProperties);
     }
 
+    private ConfigProvider getOpenstackProvider(ExhibitorCLI cli, CommandLine commandLine, PropertyBasedOpenstackCredential openstackCredentials, String hostname, Properties defaultProperties) throws Exception
+    {
+        String  prefix = commandLine.getOptionValue(GCS_CONFIG_PREFIX, DEFAULT_PREFIX);
+
+        return new OpenstackConfigProvider(getOpenstackArguments(cli,
+                commandLine.getOptionValue(OPENSTACK_CONFIG), prefix),
+                new OpenstackClientfactoryImpl(), hostname, openstackCredentials, defaultProperties);
+    }
+
+
 
     private void checkMutuallyExclusive(ExhibitorCLI cli, CommandLine commandLine, String option1, String option2) throws ExhibitorCreatorExit
     {
@@ -607,6 +637,16 @@ public class ExhibitorCreator
             throw new ExhibitorCreatorExit(cli);
         }
         return new GcsConfigArguments(parts[0].trim(), parts[1].trim(), new GcsConfigAutoManageLockArguments(prefix + "-lock-"));
+    }
+    private OpenstackConfigArguments getOpenstackArguments(ExhibitorCLI cli, String value, String prefix) throws ExhibitorCreatorExit
+    {
+        String[]        parts = value.split(":");
+        if ( parts.length != 2 )
+        {
+            log.error("Bad opnstack config argument: " + value);
+            throw new ExhibitorCreatorExit(cli);
+        }
+        return new OpenstackConfigArguments(parts[0].trim(), parts[1].trim(), new OpenstackConfigAutoManageLockArguments(prefix + "-lock-"));
     }
 
     private CuratorFramework makeCurator(final String connectString, int baseSleepTimeMs, int maxRetries, int exhibitorPort, String exhibitorRestPath, int pollingMs)
