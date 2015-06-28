@@ -1,6 +1,5 @@
 package com.netflix.exhibitor.core.openstack;
 
-import com.google.api.client.http.ByteArrayContent;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -20,6 +19,9 @@ public class OpenstackClientImpl implements OpenstackClient {
 
     public OpenstackClientImpl(OpenstackCredentials credentials) {
         this.TOKEN_URI = String.format("http://%s/v2.0/tokens", credentials.getAuthserver());
+        this.userName = credentials.getUsername();
+        this.tenant = credentials.getTenant();
+        this.password = credentials.getPassword();
     }
 
     private String TOKEN_URI;
@@ -30,8 +32,8 @@ public class OpenstackClientImpl implements OpenstackClient {
 
     private StorageToken getCredentials() throws IOException {
         HttpPost tokenRequest = new HttpPost(TOKEN_URI);
-        String authParam = String.format("{\"auth\": {\"tenantName\": %s, \"passwordCredentials\":" +
-                " {\"username\": %s, \"password\": %s}}}", tenant, userName, password);
+        String authParam = String.format("{\"auth\": {\"tenantName\": \"%s\", \"passwordCredentials\":" +
+                " {\"username\": \"%s\", \"password\": \"%s\"}}}", tenant, userName, password);
         tokenRequest.setEntity(new StringEntity(authParam));
         tokenRequest.addHeader("Content-Type", "application/json");
 
@@ -42,8 +44,12 @@ public class OpenstackClientImpl implements OpenstackClient {
             throw new IOException("Failed to write entity content.");
         }
         JSONObject obj = new JSONObject(content);
-        String token = obj.getString("access_token");
-        String storageURL = obj.getString("publicURL");
+        JSONObject access = obj.getJSONObject("access");
+        String  token = access.getJSONObject("token").getString("id");
+
+        String storageURL = access.getJSONArray("serviceCatalog").getJSONObject(0).
+                getJSONArray("endpoints").getJSONObject(0).getString("publicURL");
+
         return new StorageToken(token, storageURL);
     }
 

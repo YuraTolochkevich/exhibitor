@@ -82,6 +82,7 @@ public class ExhibitorCLI
     public static final String GCS_CONFIG = "gcsconfig";
     public static final String OPENSTACK_CONFIG = "openstackconfig";
     public static final String GCS_CONFIG_PREFIX = "gcsconfigprefix";
+    public static final String OPENSTACK_CONFIG_PREFIX = "openstackconfigprefix";
     public static final String ZOOKEEPER_CONFIG_INITIAL_CONNECT_STRING = "zkconfigconnect";
     public static final String ZOOKEEPER_CONFIG_EXHIBITOR_PORT = "zkconfigexhibitorport";
     public static final String ZOOKEEPER_CONFIG_EXHIBITOR_URI_PATH = "zkconfigexhibitorpath";
@@ -156,6 +157,11 @@ public class ExhibitorCLI
         s3ConfigOptions.addOption(null, GCS_CONFIG, true, "The bucket name and key to store the config (gcscredentials may be provided as well). Argument is [bucket name]:[key].");
         s3ConfigOptions.addOption(null, GCS_CONFIG_PREFIX, true, "When using Google Cloud Storage shared config files, the prefix to use for values such as locks. Default is " + DEFAULT_PREFIX);
 
+        Options openstackConfigOptions = new Options();
+        s3ConfigOptions.addOption(null, OPENSTACK_CONFIG, true, "The bucket name and key to store the config (openstackcredentials may be provided as well). Argument is [container name]:[key].");
+        s3ConfigOptions.addOption(null, OPENSTACK_CONFIG_PREFIX, true, "When using Openstack Swift shared config files, the prefix to use for values such as locks. Default is " + DEFAULT_PREFIX);
+
+
         Options zookeeperConfigOptions = new Options();
         zookeeperConfigOptions.addOption(null, ZOOKEEPER_CONFIG_INITIAL_CONNECT_STRING, true, "The initial connection string for ZooKeeper shared config storage. E.g: \"host1:2181,host2:2181...\"");
         zookeeperConfigOptions.addOption(null, ZOOKEEPER_CONFIG_EXHIBITOR_PORT, true, "Used if the ZooKeeper shared config is also running Exhibitor. This is the port that Exhibitor is listening on. IMPORTANT: if this value is not set it implies that Exhibitor is not being used on the ZooKeeper shared config.");
@@ -181,6 +187,10 @@ public class ExhibitorCLI
 
         Options gcsOptions = new Options();
         gcsOptions.addOption(null, GCS_CREDENTIALS, true, "Optional credentials to use for gcsconfig. Argument is the path to an Google Cloud Storage credential properties file with three properties: " + PropertyBasedGcsCredential.PROPERTY_GCS_ACCOUNT_EMAIL + ", " + PropertyBasedGcsCredential.PROPERTY_GCS_ACCOUNT_ID + ", and " + PropertyBasedGcsCredential.PROPERTY_GCS_PRIVATE_KEY_PATH);
+
+        Options openstackOptions = new Options();
+        gcsOptions.addOption(null, OPENSTACK_CREDENTIALS, true, "Optional credentials to use for openstackconfig. Argument is the path to an Openstack credential properties file with two properties: " + PropertyBasedGcsCredential.PROPERTY_GCS_ACCOUNT_EMAIL + ", " + PropertyBasedGcsCredential.PROPERTY_GCS_ACCOUNT_ID + ", and " + PropertyBasedGcsCredential.PROPERTY_GCS_PRIVATE_KEY_PATH);
+
 
         generalOptions = new Options();
         generalOptions.addOption(null, TIMEOUT, true, "Connection timeout (ms) for ZK connections. Default is 30000.");
@@ -211,6 +221,7 @@ public class ExhibitorCLI
         addAll("Configuration Options for Type \"zookeeper\"", zookeeperConfigOptions);
         addAll("Configuration Options for Type \"file\"", fileConfigOptions);
         addAll("Configuration Options for Type \"azure\"", azureConfigOptions);
+        addAll("Configuration Options for Type \"openstack\"", openstackConfigOptions);
         addAll("Configuration Options for Type \"none\"", noneConfigOptions);
         addAll("Backup Options", backupOptions);
         addAll("Authorization Options", authOptions);
